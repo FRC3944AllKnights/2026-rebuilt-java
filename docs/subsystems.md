@@ -16,7 +16,7 @@ The drivetrain uses **swerve drive** — each of the 4 wheel modules has its own
 flowchart TB
     subgraph Drivetrain
         direction TB
-        Pigeon["Pigeon2 IMU (ID: 20)\nGyro / Heading"]
+        Pigeon["Pigeon2 IMU (ID: 20)<br>Gyro / Heading"]
 
         subgraph FL["Front Left Module"]
             FLD["Drive Motor (ID: 11)"]
@@ -97,20 +97,20 @@ drivetrain.driveDefaultCommand(
 
 **File:** `subsystems/IntakeSubsystem.java`
 
-The intake has a deployable arm that swings down to collect game pieces, plus rollers that pull them in.
+The intake has a deployable arm that extends down to collect game pieces, plus rollers that pull them in.
 
 ```mermaid
 flowchart LR
     subgraph Intake
         subgraph Deploy Arm
-            DL["Deploy Left (ID: 30)\nNEO 550 · MotionMagic"]
-            DR["Deploy Right (ID: 31)\nNEO 550 · Follower"]
+            DL["Deploy Left (ID: 30)<br>NEO 550 · MotionMagic"]
+            DR["Deploy Right (ID: 31)<br>NEO 550 · Follower"]
         end
-        Roller["Roller (ID: 32)\nNEO · Duty Cycle"]
+        Roller["Roller (ID: 32)<br>NEO · Duty Cycle"]
     end
 
     DL -->|"leads"| DR
-    Deploy_Arm -->|swings down| Roller
+    Deploy_Arm -->|extends down| Roller
 ```
 
 ### How It Works
@@ -161,20 +161,20 @@ This retracts the arm (to unlatch any mechanism), then returns to the start posi
 
 **File:** `subsystems/ShooterSubsystem.java`
 
-The shooter has two flywheel motors that spin up to launch game pieces, and two indexer motors that feed pieces into the shooter.
+The shooter has two motors that spin up to launch game pieces, and two indexer motors that feed pieces into the shooter.
 
 ```mermaid
 flowchart LR
     subgraph Shooter
         subgraph Flywheel
-            SL["Shooter Left (ID: 40)\nNEO · Velocity Control"]
-            SR["Shooter Right (ID: 41)\nNEO · Follower"]
+            SL["Shooter Left (ID: 40)<br>NEO · Velocity Control"]
+            SR["Shooter Right (ID: 41)<br>NEO · Follower"]
         end
         subgraph Indexer
-            IL["Indexer Left (ID: 42)\nNEO · Duty Cycle"]
-            IR["Indexer Right (ID: 50)\nNEO · Follower"]
+            IL["Indexer Left (ID: 42)<br>NEO · Duty Cycle"]
+            IR["Indexer Right (ID: 50)<br>NEO · Follower"]
         end
-        LED["LED Strip\n60 LEDs · Port 1"]
+        LED["LED Strip<br>60 LEDs · Port 1"]
     end
 
     SL -->|"leads"| SR

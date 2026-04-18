@@ -103,18 +103,18 @@ What this says: "While the A button is held down, keep running the intake at ful
 ```mermaid
 graph TB
     subgraph Xbox Controller
-        LS["Left Stick\nDrive (forward/strafe)"]
-        RS["Right Stick X\nRotation"]
-        A["A Button\nIntake Forward"]
-        B["B Button\nIntake Reverse"]
-        X["X Button\nDeploy Intake"]
-        Y["Y Button\nRetract Intake"]
-        LT["Left Trigger\nSpin Up Shooter"]
-        RT["Right Trigger\nFeed Indexer"]
-        Back["Back Button\nToggle Auto-Aim RPM"]
-        RB["Right Bumper\nToggle X-Brake"]
-        RSClick["Right Stick Click\nSnap to 45-deg Angle"]
-        DUp["D-Pad Up\nAuto-Aim to Hub"]
+        LS["Left Stick<br>Drive (forward/strafe)"]
+        RS["Right Stick X<br>Rotation"]
+        A["A Button<br>Intake Forward"]
+        B["B Button<br>Intake Reverse"]
+        X["X Button<br>Deploy Intake"]
+        Y["Y Button<br>Retract Intake"]
+        LT["Left Trigger<br>Spin Up Shooter"]
+        RT["Right Trigger<br>Feed Indexer"]
+        Back["Back Button<br>Toggle Auto-Aim RPM"]
+        RB["Right Bumper<br>Toggle X-Brake"]
+        RSClick["Right Stick Click<br>Snap to 45-deg Angle"]
+        DUp["D-Pad Up<br>Auto-Aim to Hub"]
     end
 ```
 
