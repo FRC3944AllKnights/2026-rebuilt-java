@@ -51,23 +51,32 @@ public final class Autos {
 
   public Command BackUpAndShoot() {
     return Commands.sequence(
-            this.drivetrain.runOnce(() -> drivetrain.seedFieldCentric(new Rotation2d(0.0))),
-            this.drivetrain.applyRequest(() ->
-                    drive.withVelocityX(-0.5)
-                      .withVelocityY(0.0)
-                      .withRotationalRate(0.0))
-                    .withTimeout(2.0),
-            drivetrain.applyRequest(SwerveRequest.Idle::new),
-            this.shooter.run(() -> shooter.spinUpShooter(1.0)).withTimeout(2.0),
-            shooter.run(() -> {
-              this.shooter.run(() -> shooter.spinUpShooter(1.0));
-              this.shooter.run(() -> shooter.setIndexerSpeed(1.0));
-            }).withTimeout(6.0),
+      // Establish 0 degrees as the field-centric forward direction
+      this.drivetrain.runOnce(() -> drivetrain.seedFieldCentric(Rotation2d.kZero)),
 
-            this.shooter.runOnce(() -> {
-              shooter.setIndexerSpeed(0.0);
-              shooter.spinUpShooter(0.0);
-            })
-    );
+      // Back up at 0.5 m/s for two seconds
+      this.drivetrain.applyRequest(() ->
+              drive.withVelocityX(-0.5)
+                .withVelocityY(0.0)
+                .withRotationalRate(0.0))
+              .withTimeout(2.0),
+
+      // Stop the drivetrain, runOnce is important so the sequence can continue
+      drivetrain.runOnce(() ->
+              drivetrain.setControl(new SwerveRequest.Idle())),
+
+      // Allow shooter to reach speed before feeding
+      this.shooter.run(() -> shooter.spinUpShooter(1.0)).withTimeout(2.0),
+
+      // Keep the shooter running while operating the indexer
+      shooter.run(() -> {
+        shooter.spinUpShooter(1.0);
+        shooter.setIndexerSpeed(1.0);
+      }).withTimeout(6.0)
+    ).finallyDo(interrupted -> {
+      shooter.setIndexerSpeed(0.0);
+      shooter.spinUpShooter(0.0);
+      drivetrain.setControl(new SwerveRequest.Idle());
+    });
   }
 }
