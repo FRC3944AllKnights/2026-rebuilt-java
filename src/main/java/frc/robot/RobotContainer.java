@@ -6,7 +6,6 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest.*;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -38,21 +37,23 @@ import static edu.wpi.first.units.Units.*;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-  private final IntakeSubsystem intake = TunerConstants.createIntake();
-  private final ShooterSubsystem shooter = TunerConstants.createShooter();
-  private final ClimberSubsystem climber = TunerConstants.createClimber();
-  private final VisionSubsystem vision = TunerConstants.createVision();
+  private final IntakeSubsystem intake = new IntakeSubsystem();
+  private final ShooterSubsystem shooter = new ShooterSubsystem();
+  private final ClimberSubsystem climber = new ClimberSubsystem();
+  private final VisionSubsystem vision = new VisionSubsystem();
 
   private final Telemetry logger = new Telemetry(MAX_SPEED);
 
   private VisionSubsystem.VisionTarget hubVisionTarget;
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
 
-  static final LinearVelocity MAX_SPEED = TunerConstants.SPEED_AT_12_VOLTS.times(1.0);
+  public static final LinearVelocity SPEED_AT_12_VOLTS = MetersPerSecond.of(4.58);
+  static final LinearVelocity MAX_SPEED = SPEED_AT_12_VOLTS.times(1.0);
   static final AngularVelocity MAX_ANGULAR_RATE = RotationsPerSecond.of(0.75);
 
   FieldCentric drive = new FieldCentric()
-          .withDeadband(MAX_SPEED).withRotationalDeadband(MAX_ANGULAR_RATE)
+          .withDeadband(MAX_SPEED.times(0.1))
+          .withRotationalDeadband(MAX_ANGULAR_RATE.times(0.1))
           .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
   SwerveDriveBrake brake = new SwerveDriveBrake();
   PointWheelsAt point = new PointWheelsAt();
@@ -100,14 +101,11 @@ public class RobotContainer {
     // Note that X is defined as forward according to WPILib convention,
     // and Y is defined as to the left according to WPILib convention.
     drivetrain.setDefaultCommand(
-            // Drivetrain will execute this command periodically
-            // If joystick is idle, set X formation
-            // Else: drive normally
-            Commands.run(() -> drivetrain.driveDefaultCommand(
-                    MAX_SPEED.times(MathUtil.applyDeadband(joystick.getLeftY(), 0.1)),
-                    MAX_SPEED.times(MathUtil.applyDeadband(joystick.getLeftX(), 0.1)),
-                    MAX_ANGULAR_RATE.times(MathUtil.applyDeadband(joystick.getRightX(), 0.1)),
-                    drive), drivetrain)
+            drivetrain.applyRequest(() -> drive
+                    .withVelocityX(MAX_SPEED.times(-joystick.getLeftY()))
+                    .withVelocityY(MAX_SPEED.times(-joystick.getLeftX()))
+                    .withRotationalRate(MAX_ANGULAR_RATE.times(-joystick.getRightX()))
+            )
     );
 
     // Idle while the robot is disabled. This ensures the configured
@@ -121,11 +119,6 @@ public class RobotContainer {
     joystick.back().onTrue(Commands.runOnce(() -> {
       shooter.toggleAdjustableRPM();
       SmartDashboard.putBoolean("Adjustable RPM", shooter.isAdjustableRPMEnabled());
-    }));
-
-    joystick.rightBumper().onTrue(Commands.runOnce(() -> {
-      drivetrain.toggleAutoXBraking();
-      SmartDashboard.putBoolean("Auto X-Brake", drivetrain.isAutoBrakingEnabled());
     }));
 
     // Intake controls
@@ -188,8 +181,8 @@ public class RobotContainer {
     }));
 
     this.joystick.rightStick().whileTrue(drivetrain.applyRequest(() -> facingAngle
-            .withVelocityX(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftY(), 0.1)))
-            .withVelocityY(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftX(), 0.1)))
+            .withVelocityX(MAX_SPEED.times(-joystick.getLeftY()))
+            .withVelocityY(MAX_SPEED.times(-joystick.getLeftX()))
             .withTargetDirection(new Rotation2d(this.snapHeading))));
 
     // Snap-to-hub: D-Pad Up auto rotates to center robot to the Hub AprilTag
@@ -199,13 +192,13 @@ public class RobotContainer {
                 var heading = drivetrain.getState().Pose.getRotation().getDegrees();
                 var target = heading - vision.getTX();
                 return facingAngle
-                        .withVelocityX(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftY(), 0.1)))
-                        .withVelocityY(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftX(), 0.1)))
+                        .withVelocityX(MAX_SPEED.times(-joystick.getLeftY()))
+                        .withVelocityY(MAX_SPEED.times(-joystick.getLeftX()))
                         .withTargetDirection(new Rotation2d(target));
               }
               return facingAngle
-                      .withVelocityX(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftY(), 0.1)))
-                      .withVelocityY(MAX_SPEED.times(MathUtil.applyDeadband(this.joystick.getLeftX(), 0.1)))
+                      .withVelocityX(MAX_SPEED.times(-joystick.getLeftY()))
+                      .withVelocityY(MAX_SPEED.times(-joystick.getLeftX()))
                       .withTargetDirection(new Rotation2d(drivetrain.getState().Pose.getRotation().getDegrees()));
             })
     );
