@@ -22,7 +22,6 @@ import static edu.wpi.first.wpilibj2.command.Commands.*;
 public class IntakeSubsystem extends SubsystemBase {
 
     private final TalonFXS intakeDeployLeftMotor = new TalonFXS(CANConstants.INTAKE_DEPLOY_LEFT_MOTOR_ID, CANConstants.CAN_BUS);
-    private final TalonFXS intakeDeployRightMotor = new TalonFXS(CANConstants.INTAKE_DEPLOY_RIGHT_MOTOR_ID, CANConstants.CAN_BUS);
     private final TalonFXS intakeRollerMotor = new TalonFXS(CANConstants.INTAKE_ROLLER_MOTOR_ID, CANConstants.CAN_BUS);
 
     private Angle targetPosition = IntakeConstants.INTAKE_START_POSITION;
@@ -59,7 +58,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployLeftConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         deployLeftConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         deployLeftConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = IntakeConstants.INTAKE_DEPLOYED_POSITION.magnitude();
-        deployLeftConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = IntakeConstants.INTAKE_RETRACTED_POSITION.magnitude();
+        deployLeftConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = IntakeConstants.INTAKE_START_POSITION.magnitude();
 
         // Set brake on boot and invert motor
         deployLeftConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
@@ -77,10 +76,6 @@ public class IntakeSubsystem extends SubsystemBase {
         deployRightConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         deployRightConfig.CurrentLimits.SupplyCurrentLimit = IntakeConstants.INTAKE_DEPLOY_SUPPLY_CURRENT_LIMIT;
 
-        this.intakeDeployRightMotor.getConfigurator().apply(deployRightConfig);
-
-        this.intakeDeployRightMotor.setControl(new Follower(this.intakeDeployLeftMotor.getDeviceID(), MotorAlignmentValue.Opposed));
-
         // Configure roller motors
         var rollerConfig = new TalonFXSConfiguration();
 
@@ -95,7 +90,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
         // Set encoder to 0, the current starting position
         this.intakeDeployLeftMotor.setPosition(IntakeConstants.INTAKE_START_POSITION);
-        this.intakeDeployRightMotor.setPosition(IntakeConstants.INTAKE_START_POSITION);
     }
 
     public void runIntake(double speed) {
@@ -113,25 +107,22 @@ public class IntakeSubsystem extends SubsystemBase {
         // following the trapezoidal/S-curve profile configured in the constructor
 
         var targetPosition = up
-                ? IntakeConstants.INTAKE_RETRACTED_POSITION
+                ? IntakeConstants.INTAKE_START_POSITION
                 : IntakeConstants.INTAKE_DEPLOYED_POSITION;
 
         this.targetPosition = targetPosition;
 
         this.intakeDeployLeftMotor.setControl(new MotionMagicVoltage(targetPosition));
-        this.intakeDeployRightMotor.setControl(new MotionMagicVoltage(targetPosition));
     }
 
     public void setDeployTarget(Angle position) {
         this.targetPosition = position;
 
         this.intakeDeployLeftMotor.setControl(new MotionMagicVoltage(position));
-        this.intakeDeployRightMotor.setControl(new MotionMagicVoltage(position));
     }
 
     public void holdDeployPosition() {
         this.intakeDeployLeftMotor.setControl(new MotionMagicVoltage(this.targetPosition));
-        this.intakeDeployRightMotor.setControl(new MotionMagicVoltage(this.targetPosition));
     }
 
     public boolean isAtPosition() {
@@ -151,20 +142,10 @@ public class IntakeSubsystem extends SubsystemBase {
         var targetPosition = this.targetPosition.plus(steps);
 
         this.intakeDeployLeftMotor.setControl(new MotionMagicVoltage(targetPosition));
-        this.intakeDeployRightMotor.setControl(new MotionMagicVoltage(targetPosition));
     }
 
     public void publishTelemetry() {
         SmartDashboard.putNumber("Intake/Current Position (tr)", intakeDeployLeftMotor.getPosition().getValueAsDouble());
         SmartDashboard.putNumber("Intake/Target Position (tr)", targetPosition.magnitude());
-    }
-
-    public Command primeIntakeCommand() {
-        return sequence(
-                runOnce(() -> setDeployTarget(IntakeConstants.INTAKE_RETRACTED_POSITION)),
-                waitUntil(this::isAtPosition).withTimeout(2),
-                runOnce(() -> setDeployTarget(IntakeConstants.INTAKE_START_POSITION)),
-                waitUntil(this::isAtPosition).withTimeout(2)
-        );
     }
 }

@@ -122,9 +122,6 @@ public class RobotContainer {
     }));
 
     // Intake controls
-    // Auto-prime: retract to unlatch, then return to start position
-    RobotModeTriggers.autonomous().onTrue(this.intake.primeIntakeCommand());
-    RobotModeTriggers.teleop().onTrue(this.intake.primeIntakeCommand());
 
     // Intake jog tuning (Test mode only)
     SmartDashboard.putNumber("Intake/Deploy Jog Step (tr)", IntakeConstants.INTAKE_DEPLOY_JOG_STEP.magnitude());

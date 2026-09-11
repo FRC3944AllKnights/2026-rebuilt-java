@@ -92,7 +92,6 @@ public final class Constants {
     public static final double INTAKE_DEPLOY_JERK = 100.0;
 
     public static final Angle INTAKE_DEPLOYED_POSITION = Rotations.of(50.0);
-    public static final Angle INTAKE_RETRACTED_POSITION = Rotations.of(-5.0);
     public static final Angle INTAKE_START_POSITION = Rotations.of(0.0);
 
     public static final double INTAKE_DEPLOY_SUPPLY_CURRENT_LIMIT = 20.0;
@@ -102,8 +101,6 @@ public final class Constants {
 
     public static final Angle INTAKE_DEPLOY_JOG_STEP = Rotations.of(5.0);
     public static final Angle INTAKE_RETRACT_JOG_STEP = Rotations.of(0.5);
-
-    public static final boolean INTAKE_DEPLOY_RIGHT_INVERTED = true;
   }
 
   public static class VisionConstants {
@@ -178,14 +175,12 @@ public final class Constants {
 
     // Intake
     public static final int INTAKE_DEPLOY_LEFT_MOTOR_ID = 30;
-    public static final int INTAKE_DEPLOY_RIGHT_MOTOR_ID = 31;
     public static final int INTAKE_ROLLER_MOTOR_ID = 32;
 
     // Shooter
     public static final int SHOOTER_LEFT_MOTOR_ID = 40;
     public static final int SHOOTER_RIGHT_MOTOR_ID = 41;
     public static final int INDEXER_LEFT_MOTOR_ID = 42;
-    public static final int INDEXER_RIGHT_MOTOR_ID = 50;
 
     // Climber
     //static final int CLIMBER_MOTOR_ID = 50;
