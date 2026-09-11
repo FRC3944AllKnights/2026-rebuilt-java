@@ -124,29 +124,24 @@ public class RobotContainer {
     // Intake controls
 
     // Intake jog tuning (Test mode only)
-    SmartDashboard.putNumber("Intake/Deploy Jog Step (tr)", IntakeConstants.INTAKE_DEPLOY_JOG_STEP.magnitude());
-    SmartDashboard.putNumber("Intake/Retract Jog Step (tr)", IntakeConstants.INTAKE_RETRACT_JOG_STEP.magnitude());
+    SmartDashboard.putNumber("Intake/Deploy Jog Step (deg)", IntakeConstants.INTAKE_DEPLOY_JOG_STEP.in(Degrees));
+    SmartDashboard.putNumber("Intake/Retract Jog Step (deg)", IntakeConstants.INTAKE_RETRACT_JOG_STEP.in(Degrees));
 
-    joystick.povRight().onTrue(Commands.runOnce(() -> {
-      if (DriverStation.isTest()) {
-        var step = Rotations.of(SmartDashboard.getNumber("Intake/Deploy Jog Step (tr)",
-                IntakeConstants.INTAKE_DEPLOY_JOG_STEP.magnitude()));
+    joystick.povRight().and(DriverStation::isTestEnabled).onTrue(Commands.runOnce(() -> {
+        var step = Degrees.of(Math.abs(SmartDashboard.getNumber("Intake/Deploy Jog Step (deg)",
+                IntakeConstants.INTAKE_DEPLOY_JOG_STEP.in(Degrees))));
         this.intake.jogPosition(step);
-      }
     }, this.intake));
 
-    joystick.povLeft().onTrue(Commands.runOnce(() -> {
-      if (DriverStation.isTest()) {
-        var step = Rotations.of(SmartDashboard.getNumber("Intake/Retract Jog Step (tr)",
-                IntakeConstants.INTAKE_RETRACT_JOG_STEP.magnitude()));
+    joystick.povLeft().and(DriverStation::isTestEnabled).onTrue(Commands.runOnce(() -> {
+        var step = Degrees.of(-Math.abs(SmartDashboard.getNumber("Intake/Retract Jog Step (deg)",
+                IntakeConstants.INTAKE_RETRACT_JOG_STEP.in(Degrees))));
         this.intake.jogPosition(step);
-      }
     }, this.intake));
 
     this.intake.setDefaultCommand(Commands.run(() -> {
       this.intake.runIntake(0.0);
       this.intake.holdDeployPosition();
-      this.intake.publishTelemetry();
     }, this.intake));
 
     this.joystick.a().whileTrue(Commands.run(() -> this.intake.runIntake(1.0), this.intake));

@@ -77,6 +77,7 @@ public final class Constants {
   }
 
   public static class IntakeConstants {
+    // Motor rotations per arm rotation; verify the complete reduction on the new arm.
     public static final double INTAKE_DEPLOY_GEAR_RATIO = 12.8;
 
     public static final double INTAKE_DEPLOY_P = 0.1;
@@ -87,20 +88,26 @@ public final class Constants {
     public static final double INTAKE_DEPLOY_V = 0.12;
     public static final double INTAKE_DEPLOY_G = 0.1;
 
-    public static final double INTAKE_DEPLOY_CRUISE_VELOCITY = 5.0;
-    public static final double INTAKE_DEPLOY_ACCELERATION = 10.0;
-    public static final double INTAKE_DEPLOY_JERK = 100.0;
+    // Motion Magic uses arm rotations/s, rotations/s^2, and rotations/s^3.
+    public static final double INTAKE_DEPLOY_CRUISE_VELOCITY = 15.0 / 360.0;
+    public static final double INTAKE_DEPLOY_ACCELERATION = 30.0 / 360.0;
+    public static final double INTAKE_DEPLOY_JERK = 120.0 / 360.0;
 
-    public static final Angle INTAKE_DEPLOYED_POSITION = Rotations.of(50.0);
-    public static final Angle INTAKE_START_POSITION = Rotations.of(0.0);
+    // Confirmed 90-degree travel relative to fully up at boot; verify gearing before use.
+    public static final Angle INTAKE_DEPLOYED_POSITION = Degrees.of(90.0);
+    public static final Angle INTAKE_START_POSITION = Degrees.of(0.0);
 
     public static final double INTAKE_DEPLOY_SUPPLY_CURRENT_LIMIT = 20.0;
+    // Commissioning limits, independent of PID gains. These still require hardware tuning.
+    public static final double INTAKE_DEPLOY_STATOR_CURRENT_LIMIT = 20.0;
+    public static final double INTAKE_DEPLOY_MAX_VOLTAGE = 2.0;
     public static final double INTAKE_ROLLERS_SUPPLY_CURRENT_LIMIT = 40.0;
+    public static final double INTAKE_ROLLER_MAX_VOLTAGE = 6.0;
 
-    public static final double INTAKE_POSITION_TOLERANCE = 0.5;
+    public static final Angle INTAKE_POSITION_TOLERANCE = Degrees.of(1.0);
 
-    public static final Angle INTAKE_DEPLOY_JOG_STEP = Rotations.of(5.0);
-    public static final Angle INTAKE_RETRACT_JOG_STEP = Rotations.of(0.5);
+    public static final Angle INTAKE_DEPLOY_JOG_STEP = Degrees.of(1.0);
+    public static final Angle INTAKE_RETRACT_JOG_STEP = Degrees.of(1.0);
   }
 
   public static class VisionConstants {
@@ -181,6 +188,7 @@ public final class Constants {
     public static final int SHOOTER_LEFT_MOTOR_ID = 40;
     public static final int SHOOTER_RIGHT_MOTOR_ID = 41;
     public static final int INDEXER_LEFT_MOTOR_ID = 42;
+    public static final int INDEXER_RIGHT_MOTOR_ID = 50;
 
     // Climber
     //static final int CLIMBER_MOTOR_ID = 50;

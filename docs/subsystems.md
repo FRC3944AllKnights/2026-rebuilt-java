@@ -97,66 +97,52 @@ drivetrain.driveDefaultCommand(
 
 **File:** `subsystems/IntakeSubsystem.java`
 
-The intake has a deployable arm that extends down to collect game pieces, plus rollers that pull them in.
+The new intake uses one full-size NEO deploy motor (REV-21-1650) on CAN 30 and one NEO Vortex roller motor with a Solo Adapter on CAN 32. The user's photos identify these motors: deploy is configured as `NEO_JST`, replacing the incorrect `NEO550_JST` setting, and rollers use `VORTEX_JST`. The old CAN 31 follower and automatic unlatching sequence have been removed. The shooter still has both indexer motors, CAN 42 and CAN 50; CAN 50 follows CAN 42 with opposed motor alignment.
 
-```mermaid
-flowchart LR
-    subgraph Intake
-        subgraph Deploy Arm
-            DL["Deploy Left (ID: 30)<br>NEO 550 · MotionMagic"]
-            DR["Deploy Right (ID: 31)<br>NEO 550 · Follower"]
-        end
-        Roller["Roller (ID: 32)<br>NEO · Duty Cycle"]
-    end
+### Controls and commissioning settings
 
-    DL -->|"leads"| DR
-    Deploy_Arm -->|extends down| Roller
-```
+| Control / setting | Behavior |
+|-------------------|----------|
+| A / B, held | Rollers forward / reverse at up to 6 V, half nominal 12 V |
+| X / Y | Deploy / return fully up |
+| D-pad right / left | In **enabled Test mode**, add / subtract one jog step per press |
+| Dashboard jog steps | `Intake/Deploy Jog Step (deg)` and `Intake/Retract Jog Step (deg)`, initially 1 degree each |
+| Up position | 0 degrees relative to the physical startup position |
+| Deployed position | Confirmed 90 degrees from up; total gear reduction still unverified |
+| Position tolerance | 1 degree |
+| Motion profile | 15 degrees/s cruise, 30 degrees/s^2 acceleration, 120 degrees/s^3 jerk |
+| Deploy output limits | +/-2 V, 20 A stator, 20 A supply; commissioning values requiring hardware validation |
 
-### How It Works
+All deploy targets are saved and clamped to the configured travel range. Subsequent holds and jogs use that saved target. Negative steps retract. The dashboard accepts degrees; Phoenix soft limits and Motion Magic profile settings are explicitly converted to mechanism rotations.
 
-- **Deploy motors** use **MotionMagic** — this tells the motor to go to an exact position following a smooth curve instead of slamming there instantly. Think of it like cruise control for position.
-- **Roller motor** uses **DutyCycleOut** — just a simple percentage of power. 1.0 = full forward, -1.0 = full reverse.
-- The right deploy motor is a **follower** — it automatically copies whatever the left motor does (but inverted, since it's on the opposite side).
+### Findings from commit c0e7583 and the existing controls
 
-### Positions
+- The deploy-motor photo shows a full-size NEO (REV-21-1650). The old NEO 550 motor arrangement did not match that motor. Correct this before tuning gains: Phoenix uses the arrangement to select motor/sensor behavior, and a mismatch can prevent correct motor operation. This is a plausible contributor to the reported twitching/squealing, not proof of their sole cause. The NEO Vortex/Solo Adapter in the other photo belongs to the rollers, which the user reports were already working.
+- The commit deleted `INDEXER_RIGHT_MOTOR_ID` even though `ShooterSubsystem` still referenced it. Restoring CAN 50 restores the existing shooter intake/indexer and fixes compilation. The exact committed source could not have produced a new successful build without that fix; confirm the robot is running the expected build.
+- `jogPosition()` previously sent a temporary target without updating the stored target. The default command immediately commanded the old position again, which could cause a twitch or no visible motion. Left D-pad also sent a positive step.
+- `Rotations.of(50)` meant 50 complete arm rotations, not 50 degrees. With the configured 12.8:1 reduction, that corresponds to 640 motor rotations. The previous 5-rotation deploy jog, 0.5-rotation retract jog, and 0.5-rotation tolerance were also much larger than this arm's travel.
+- The old profile allowed 5 arm rotations/s (1,800 degrees/s), despite the small PID gains. Small gains are not a speed, voltage, or torque limit. The revised profile and independent output limits provide explicit commissioning bounds; they do not establish that the mechanism is safe or correctly tuned.
+- Telemetry used to run only in the default command. It now runs in subsystem `periodic()`, including while roller commands run and while the robot is disabled.
 
-| Position | Value (rotations) | Meaning |
-|----------|-------------------|---------|
-| Start | 0.0 | Where the arm is when the robot boots |
-| Deployed | 50.0 | Arm fully down, ready to collect |
-| Retracted | -5.0 | Arm pulled back past start (used to unlatch) |
+### Before tuning on the robot
 
-### Prime Sequence
+1. Physically place/support the arm fully up **before robot code starts**. Startup assigns zero to the relative encoder; there is no absolute reference or homing switch. Starting with the arm down makes all software limits wrong. Merely disabling/re-enabling does not re-zero the encoder.
+2. Verify the full-size NEO deploy motor is connected to Talon FXS CAN 30, with its sensor cable connected to JST and the phase leads connected as specified by CTRE (red A, black B, white C). The Vortex/Solo Adapter roller motor is on CAN 32. Verify the deploy arm's entire reduction is really 12.8 motor turns per arm turn. The user confirmed 90 degrees of travel but has not verified the gear ratio. Include all gearbox, gear, chain, and belt stages; the motor end-cap photo does not show these. Confirm that down corresponds to increasing encoder position. At 12.8:1, 90 degrees of arm travel is 3.2 motor turns. Verify endpoint clearance from mechanical stops.
+3. Confirm `Intake/Deploy Config Status` and `Intake/Deploy Zero Status` report success. Configuration errors must be resolved before motion testing.
+4. Select **Test and Enable** in Driver Station. Verify `Intake/Test Enabled` is true and the Xbox controller is on USB port 0. Tap and release right D-pad: `Intake/Target Position (deg)` should increase by 1 degree per press. Left should decrease it, stopping at zero. A left jog at zero correctly does nothing. Use the new `(deg)` dashboard entries, not the old `(tr)` entries.
+5. Compare target and actual angle with `Intake/Deploy Motor Voltage (V)` and `Intake/Deploy Stator Current (A)`. A target that changes and persists confirms the jog path works. A changing target with very low voltage points toward insufficient gains/feedforward. Little motion with appreciable current can indicate a stalled or binding mechanism; disable and inspect it rather than repeatedly adding target error. Unexpected angle direction or scale calls for checking inversion, gearing, and sensor feedback first.
 
-At the start of auto and teleop, the intake runs a "prime" sequence:
+The existing PID/feedforward gains were deliberately left unchanged. For `MotionMagicVoltage`, kP = 0.1 means 0.1 V per **rotation** of error: only about 0.00028 V for 1 degree or 0.025 V for 90 degrees, before feedforward. At the new cruise speed, kV = 0.12 contributes only 0.005 V. kS = 0.25 V and kG = 0.1 V may not overcome friction or support the loaded arm, particularly with only one motor. A small jog may consequently update the target without visibly moving the arm until tuned.
 
-```java
-public Command primeIntakeCommand() {
-    return sequence(
-        runOnce(() -> setDeployTarget(INTAKE_RETRACTED_POSITION)),
-        waitUntil(this::isAtPosition).withTimeout(2),
-        runOnce(() -> setDeployTarget(INTAKE_START_POSITION)),
-        waitUntil(this::isAtPosition).withTimeout(2)
-    );
-}
-```
+The current gravity configuration uses Phoenix's default constant elevator compensation. An arm normally needs angle-dependent gravity compensation, but enabling `Arm_Cosine` also requires a correctly referenced horizontal angle (or calibrated offset) and sign. Do not simply enable it while assuming the current up-at-zero reference is horizontal. Measure geometry, then tune gravity/static feedforward and proportional gain in controlled increments within the commissioning limits. Retune velocity feedforward in mechanism units as well. If the output reaches a configured limit, reassess the mechanism and required torque before changing that limit.
 
-This retracts the arm (to unlatch any mechanism), then returns to the start position.
+Squealing alone cannot distinguish insufficient drive, binding, motor commutation/sensor problems, or oscillation from this source code. Use the measurements above and check the motor/controller faults and wiring. Do not infer that the sound is harmless or that increasing kP will fix it.
 
-### Key Methods
+WPILib 2026 does not enable LiveWindow by default in Test mode. This project does not enable it, and the scheduler runs in `robotPeriodic()`, so Test mode itself is not evidence of a disabled scheduler. The jog target overwrite and missing enable/controller input are more directly relevant checks.
 
-| Method | What It Does |
-|--------|-------------|
-| `runIntake(speed)` | Spins the rollers. `1.0` = pull in, `-1.0` = spit out, `0.0` = stop |
-| `setIntakePosition(up)` | Deploys (`false`) or retracts (`true`) the arm using MotionMagic |
-| `holdDeployPosition()` | Keeps the arm at its current target (called every loop to maintain position) |
-| `isAtPosition()` | Returns `true` if the arm is within 0.5 rotations of its target |
-| `jogPosition(steps)` | Nudges the arm by a small amount (for fine-tuning in test mode) |
-| `primeIntakeCommand()` | Returns a Command that runs the retract→return-to-start sequence |
+References: [Phoenix motor arrangements](https://api.ctr-electronics.com/phoenix6/stable/java/com/ctre/phoenix6/signals/MotorArrangementValue.html), [REV Solo Adapter](https://docs.revrobotics.com/brushless/neo/vortex/solo-adapter), [Phoenix feedback ratios](https://api.ctr-electronics.com/phoenix6/stable/java/com/ctre/phoenix6/configs/ExternalFeedbackConfigs.html), [Phoenix closed-loop gains and gravity](https://pro.docs.ctr-electronics.com/en/stable/docs/api-reference/device-specific/talonfx/closed-loop-requests.html), [WPILib Test mode](https://docs.wpilib.org/en/stable/docs/software/dashboards/smartdashboard/test-mode-and-live-window/enabling-test-mode.html).
 
 ---
-
 ## Shooter
 
 **File:** `subsystems/ShooterSubsystem.java`
