@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.*;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
-import frc.robot.Telemetry;
 
 import java.util.Optional;
 
@@ -36,7 +35,7 @@ public class VisionSubsystem extends SubsystemBase {
     double shooterTY = 0.0;
     int shooterTagId = -1;
 
-    private AprilTagFieldLayout fieldLayout;
+    private final AprilTagFieldLayout fieldLayout;
 
     public VisionSubsystem() {
         // Load the 2026 field layout from WPILib's built in resource
@@ -178,13 +177,10 @@ public class VisionSubsystem extends SubsystemBase {
 
     public Distance getTagHeightInches(int tagId) {
         var pose = this.fieldLayout.getTagPose(tagId);
-        if (pose.isPresent()) {
-            // Field layout Z is in meters, convert to inches
-            return Inches.of(pose.get().getZ());
-        }
+        // Field layout Z is in meters, convert to inches
+        return pose.map(pose3d -> Inches.of(pose3d.getZ())).orElse(ShooterConstants.HUB_TAG_HEIGHT);
 
         // Fallback to hardcoded hub tag height if tag not found in layout
-        return ShooterConstants.HUB_TAG_HEIGHT;
     }
 
     public AprilTagFieldLayout getFieldLayout() {
